@@ -22,38 +22,41 @@ type Message struct {
 // Parses an incoming IRC message in the format:
 //   [:Prefix] Command [ { Param } ] [:Txt]
 func ParseMessage(l string) *Message {
-	msg := &Message{Raw: l}
-	if l[0] == ':' {
-		if i := strings.Index(l, " "); i > -1 {
-			msg.Prefix = l[1:i]
-			l = l[i+1 : len(l)]
+	split2 := func(s, sep string) (string, string) {
+		parts := strings.SplitN(s, sep, 2)
+		if len(parts) == 2 {
+			return parts[0], parts[1]
 		}
-		if i := strings.Index(msg.Prefix, "!"); i > -1 {
-			msg.User = msg.Prefix[i+1 : strings.Index(msg.Prefix, "@")]
-		}
+		return parts[0], ""
 	}
-	parts := strings.SplitN(l, " ", 2)
-	msg.Command = parts[0]
-	if len(parts) == 1 {
-		return msg
+	parsePrefix := func(l string) (head string, tail string) {
+		if l[0] != ':' {
+			return "", l
+		}
+
+		head, tail = split2(l, " ")
+		return head[1:], tail
+	}
+	parseCommand := func(l string) (res string, tail string) {
+		return split2(l, " ")
+	}
+	parseParams := func(l string) (res []string, tail string) {
+		if l[0] == ':' {
+			return []string{}, l
+		}
+
+		head, tail := split2(l, " :")
+		return strings.Split(head, " "), tail
 	}
 
-	l = parts[1]
-	if l[0] != ':' {
-		parts := strings.SplitN(l, " :", 2)
-		msg.Params = strings.Split(parts[0], " ")
-		if len(parts) == 1 {
-			return msg
-		}
-		l = parts[1]
+	msg := &Message{Raw: l}
+	msg.Prefix, l = parsePrefix(l)
+	msg.Command, l = parseCommand(l)
+	msg.Params, l = parseParams(l)
+	if l[0] == ':' {
+		l = l[1:]
 	}
-	if len(l) > 0 {
-		if l[0] == ':' && len(l) > 1 {
-			msg.Txt = l[1:]
-		} else {
-			msg.Txt = l
-		}
-	}
+	msg.Txt = l
 	return msg
 }
 
