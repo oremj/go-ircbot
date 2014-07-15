@@ -30,7 +30,7 @@ func ParseMessage(l string) *Message {
 		return parts[0], ""
 	}
 	parsePrefix := func(l string) (head string, tail string) {
-		if l[0] != ':' {
+		if l == "" || l[0] != ':' {
 			return "", l
 		}
 
@@ -41,7 +41,7 @@ func ParseMessage(l string) *Message {
 		return split2(l, " ")
 	}
 	parseParams := func(l string) (res []string, tail string) {
-		if l[0] == ':' {
+		if l == "" || l[0] == ':' {
 			return []string{}, l
 		}
 
@@ -53,7 +53,7 @@ func ParseMessage(l string) *Message {
 	msg.Prefix, l = parsePrefix(l)
 	msg.Command, l = parseCommand(l)
 	msg.Params, l = parseParams(l)
-	if l[0] == ':' {
+	if l != "" && l[0] == ':' {
 		l = l[1:]
 	}
 	msg.Txt = l
